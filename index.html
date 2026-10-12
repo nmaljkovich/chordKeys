@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#f5f3ee">
+    <meta name="description" content="An offline piano chord dictionary. Enter a chord and see its keys on a virtual piano.">
+    <title>chordKeys — piano chord dictionary</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="chords.js" defer></script>
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="masthead">
+        <a class="wordmark" href="#top" aria-label="chordKeys home"><span class="wordmark-mark" aria-hidden="true">c<span>k</span></span>chordKeys</a>
+        <span class="offline-tag"><span class="offline-dot" aria-hidden="true"></span> Works offline</span>
+      </header>
+
+      <section class="intro" id="top" aria-labelledby="page-title">
+        <p class="eyebrow">YOUR POCKET CHORD DICTIONARY</p>
+        <h1 id="page-title">Find the keys<br><span>inside a chord.</span></h1>
+        <p class="intro-copy">Type a chord. See every note light up on the piano.</p>
+      </section>
+
+      <section class="search-panel" aria-label="Find a chord">
+        <form id="chord-form" autocomplete="off">
+          <label for="chord-input">Chord symbol</label>
+          <div class="input-row">
+            <div class="input-wrap">
+              <input id="chord-input" name="chord" type="text" role="combobox" aria-haspopup="listbox" placeholder="Try CM7, F#7sus4, F#m…" autocapitalize="off" spellcheck="false" aria-autocomplete="list" aria-expanded="false" aria-controls="chord-suggestions" aria-describedby="input-hint chord-status" required>
+              <div id="chord-suggestions" class="suggestions" role="listbox" aria-label="Chord suggestions" hidden></div>
+            </div>
+            <button type="submit" class="show-button"><span>Show keys</span><span aria-hidden="true">↗</span></button>
+          </div>
+          <p id="input-hint" class="input-hint">Examples: <button type="button" class="example-link" data-example="CM7">CM7</button>, <button type="button" class="example-link" data-example="F#7sus4">F#7sus4</button>, <button type="button" class="example-link" data-example="F#m">F#m</button></p>
+        </form>
+        <p id="chord-status" class="status" role="status" aria-live="polite"></p>
+      </section>
+
+      <section class="result-panel" aria-label="Piano chord result">
+        <div class="result-heading">
+          <div>
+            <p class="eyebrow">YOUR CHORD</p>
+            <h2 id="result-title">Ready when you are</h2>
+            <p id="note-list" class="note-list">Enter a chord symbol to reveal its notes.</p>
+            <button id="play-chord" class="play-button" type="button" disabled><span aria-hidden="true">▶</span> Play chord</button>
+          </div>
+          <div class="range-control" aria-label="Keyboard register">
+            <button id="range-down" type="button" aria-label="Move keyboard down one octave" title="Move down one octave">−</button>
+            <span id="range-label">C3–B4</span>
+            <button id="range-up" type="button" aria-label="Move keyboard up one octave" title="Move up one octave">+</button>
+          </div>
+        </div>
+
+        <div class="keyboard-scroll" tabindex="0" aria-label="Scrollable piano keyboard">
+          <div id="keyboard" class="keyboard" role="img" aria-label="Two-octave piano keyboard. Enter a chord to highlight one key for each chord tone."></div>
+        </div>
+        <div class="legend" aria-label="Key marker legend">
+          <span><i class="legend-dot root-dot" aria-hidden="true"></i> Root</span>
+          <span><i class="legend-dot chord-dot" aria-hidden="true"></i> Chord tone</span>
+          <span><i class="legend-dot bass-dot" aria-hidden="true"></i> Bass note</span>
+        </div>
+      </section>
+
+      <details class="syntax-card">
+        <summary>Need a less common chord?</summary>
+        <div class="syntax-content">
+          <p>Combine qualities, extensions, and alterations: <code>Cdim7</code>, <code>Bbmaj9</code>, <code>G7b9</code>, <code>Cadd9</code>, or <code>C/E</code> (slash bass).</p>
+          <p>For any custom pitch set, enter a root and semitone intervals from it, from 0 to 11. For example, <code>C:[0,4,7,10]</code> is a C dominant seventh. See <a href="README.md">the notation guide</a> for the full syntax.</p>
+        </div>
+      </details>
+
+      <footer><span>Made for curious hands.</span><span>chordKeys <span aria-hidden="true">·</span> No account. No connection.</span></footer>
+    </main>
+  </body>
+</html>
