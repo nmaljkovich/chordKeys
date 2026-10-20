@@ -14,6 +14,17 @@ test("parses the roadmap example symbols", () => {
   assert.deepEqual(pitches("F#m"), [0, 3, 7]);
 });
 
+test("parses Italian solfege roots, bass notes, and custom interval roots", () => {
+  assert.deepEqual(parseChord("DoM7", "it").intervals, [0, 4, 7, 11]);
+  assert.deepEqual(parseChord("Fa#7sus4", "it").intervals, [0, 5, 7, 10]);
+  assert.deepEqual(parseChord("Rem", "it").intervals, [0, 3, 7]);
+  assert.equal(parseChord("Do/Mi", "it").bass.pitch, 4);
+  assert.deepEqual(parseChord("Do:[0,4,7]", "it").intervals, [0, 4, 7]);
+  assert.equal(parseNote("Sib", "it").pitch, 10);
+  assert.equal(noteName(7, false, "it"), "Sol");
+  assert.equal(noteName(10, true, "it"), "Si♭");
+});
+
 test("supports common qualities and extensions", () => {
   assert.deepEqual(pitches("Bbmaj9"), [0, 2, 4, 7, 11]);
   assert.deepEqual(pitches("Cdim7"), [0, 3, 6, 9]);
@@ -74,6 +85,11 @@ test("suggestions match typed chord prefixes and are parseable", () => {
   }
   for (const root of ["C", "C#", "Db", "D", "D#", "Eb", "E", "Fb", "E#", "F", "F#", "Gb", "G", "G#", "Ab", "A", "A#", "Bb", "B", "Cb", "B#"]) {
     for (const suggestion of suggestChords(root, 1000)) assert.doesNotThrow(() => parseChord(suggestion), suggestion);
+  }
+  assert.ok(suggestChords("Fa#7s", 7, "it").includes("Fa#7sus4"));
+  assert.ok(suggestChords("Fa♯7s", 7, "it").includes("Fa#7sus4"));
+  for (const root of ["Do", "Do#", "Reb", "Re", "Re#", "Mib", "Mi", "Mi#", "Fab", "Fa", "Fa#", "Solb", "Sol", "Sol#", "Lab", "La", "La#", "Sib", "Si", "Si#", "Dob"]) {
+    for (const suggestion of suggestChords(root, 1000, "it")) assert.doesNotThrow(() => parseChord(suggestion, "it"), suggestion);
   }
   assert.deepEqual(suggestChords(""), []);
 });

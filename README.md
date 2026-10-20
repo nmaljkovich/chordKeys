@@ -10,13 +10,17 @@ Open `index.html` directly in a browser, or serve this folder locally (for examp
 node --test
 ```
 
+To create a single-file version for easy transfer to a phone, run `node build-single-file.js`. This writes `chordKeys.html` with the CSS and JavaScript embedded. You can choose another output path with `node build-single-file.js /path/to/chordKeys.html`.
+
 As you type, the prompt suggests common chord symbols. Select one with the mouse/touch, or use the arrow keys and Enter. **Play chord** synthesizes a short chord using the browser's built-in Web Audio API; it uses no sample files or network connection. Playback follows the currently selected keyboard octave. Audio is started only after you press the button and may be unavailable in older browsers.
 
 ## Chord notation
 
+Use the **English / Italiano** toggle to switch root names and note labels between A–G and Do–Si. Chord suffixes (such as `m`, `7`, `M7`, and `sus4`) work the same in both modes. Changing modes converts a valid chord already in the input and keeps its pitch result.
+
 ### Roots and bass notes
 
-Roots are A–G with an optional sharp or flat: `C`, `F#`, `Bb`, `D♭`. Common enharmonic spellings map to the same piano key. A slash note sets the bass marker, for example `C/E`.
+Roots are A–G or Do–Si with an optional sharp or flat: `C`, `F#`, `Bb`, `D♭`, `Do`, `Fa#`, `Sib`. Common enharmonic spellings map to the same piano key. A slash note sets the bass marker, for example `C/E` or `Do/Mi`.
 
 ### Qualities and extensions
 

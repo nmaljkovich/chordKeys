@@ -25,7 +25,13 @@
 
       <section class="search-panel" aria-label="Find a chord">
         <form id="chord-form" autocomplete="off">
-          <label for="chord-input">Chord symbol</label>
+          <div class="input-tools">
+            <label id="chord-label" for="chord-input">Chord symbol</label>
+            <div class="language-toggle" role="group" aria-label="Chord notation language">
+              <button id="language-english" type="button" data-language="en" aria-pressed="true">English</button>
+              <button id="language-italian" type="button" data-language="it" aria-pressed="false">Italiano</button>
+            </div>
+          </div>
           <div class="input-row">
             <div class="input-wrap">
               <input id="chord-input" name="chord" type="text" role="combobox" aria-haspopup="listbox" placeholder="Try CM7, F#7sus4, F#m…" autocapitalize="off" spellcheck="false" aria-autocomplete="list" aria-expanded="false" aria-controls="chord-suggestions" aria-describedby="input-hint chord-status" required>
@@ -67,7 +73,18 @@
         <summary>Need a less common chord?</summary>
         <div class="syntax-content">
           <p>Combine qualities, extensions, and alterations: <code>Cdim7</code>, <code>Bbmaj9</code>, <code>G7b9</code>, <code>Cadd9</code>, or <code>C/E</code> (slash bass).</p>
-          <p>For any custom pitch set, enter a root and semitone intervals from it, from 0 to 11. For example, <code>C:[0,4,7,10]</code> is a C dominant seventh. See <a href="README.md">the notation guide</a> for the full syntax.</p>
+          <p>For any custom pitch set, enter a root and semitone intervals from it, from 0 to 11. For example, <code>C:[0,4,7,10]</code> is a C dominant seventh. See the <a href="#full-syntax">full notation guide</a> for details.</p>
+        </div>
+      </details>
+
+      <details class="syntax-card" id="full-syntax">
+        <summary>Full notation guide</summary>
+        <div class="syntax-content">
+          <p><strong>Roots:</strong> A–G or Do–Si, optionally followed by <code>#</code> or <code>b</code> (for example <code>F#</code>, <code>Db</code>, <code>Fa#</code>, or <code>Sib</code>). A slash note sets a bass note, as in <code>C/E</code> or <code>Do/Mi</code>.</p>
+          <p><strong>Qualities:</strong> major is the default and can also be written <code>M</code>, <code>maj</code>, or <code>major</code>; minor is <code>m</code>, <code>min</code>, or <code>-</code>; diminished is <code>dim</code>, <code>o</code>, or <code>°</code>; augmented is <code>aug</code> or <code>+</code>; suspended is <code>sus</code>, <code>sus2</code>, or <code>sus4</code>; power chord is <code>5</code>.</p>
+          <p><strong>Extensions:</strong> <code>6</code>, <code>7</code>, <code>9</code>, <code>11</code>, and <code>13</code>. Prefix an extension with <code>maj</code> or <code>M</code> for a major seventh, as in <code>Bbmaj9</code> or <code>CM7</code>.</p>
+          <p><strong>Alter/add/remove tones:</strong> use <code>b</code> or <code>#</code> before a degree, <code>add</code> to add a degree, or <code>no</code> to omit one. Examples: <code>G7b9</code>, <code>C#11</code>, <code>Cadd9</code>, <code>C7no5</code>.</p>
+          <p><strong>Custom pitch sets:</strong> write a root and semitone intervals from that root, each from 0–11: <code>C:[0,4,7,10]</code>. Duplicate intervals are ignored; <code>C:[]</code> represents an empty set.</p>
         </div>
       </details>
 

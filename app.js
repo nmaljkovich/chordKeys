@@ -9,6 +9,8 @@
   const noteList = document.getElementById("note-list");
   const suggestions = document.getElementById("chord-suggestions");
   const playButton = document.getElementById("play-chord");
+  const chordLabel = document.getElementById("chord-label");
+  const inputHint = document.getElementById("input-hint");
   const rangeLabel = document.getElementById("range-label");
   const rangeDown = document.getElementById("range-down");
   const rangeUp = document.getElementById("range-up");
@@ -17,6 +19,7 @@
   let currentChord = null;
   let activeSuggestion = -1;
   let audioContext = null;
+  let language = "en";
 
   function hideSuggestions() {
     suggestions.hidden = true;
@@ -26,7 +29,7 @@
   }
 
   function renderSuggestions(query) {
-    const matches = ChordKeys.suggestChords(query);
+    const matches = ChordKeys.suggestChords(query, 7, language);
     if (!matches.length) { hideSuggestions(); return; }
     activeSuggestion = -1;
     suggestions.innerHTML = matches.map((symbol, index) =>
@@ -52,8 +55,68 @@
     form.requestSubmit();
   }
 
+  function convertNotePrefix(symbol, fromLanguage, toLanguage) {
+    const pattern = fromLanguage === "it" ? /^(Sol|Do|Re|Mi|Fa|La|Si)([#b♯♭]?)/i : /^([A-G])([#b♯♭]?)/i;
+    const match = pattern.exec(symbol);
+    if (!match) return symbol;
+    const note = ChordKeys.parseNote(match[0], fromLanguage);
+    return ChordKeys.noteName(note.pitch, note.flat, toLanguage) + symbol.slice(match[0].length);
+  }
+
+  function convertChordSymbol(symbol, fromLanguage, toLanguage) {
+    let converted = convertNotePrefix(symbol.trim(), fromLanguage, toLanguage);
+    const slash = /\/([^/]+)$/.exec(converted);
+    if (slash) {
+      const bass = convertNotePrefix(slash[1], fromLanguage, toLanguage);
+      converted = `${converted.slice(0, slash.index + 1)}${bass}`;
+    }
+    return converted;
+  }
+
+  function updateLanguageControls() {
+    document.querySelectorAll("[data-language]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.language === language));
+    });
+    chordLabel.textContent = language === "it" ? "Simbolo dell’accordo" : "Chord symbol";
+    input.placeholder = language === "it" ? "Prova DoM7, Fa#7sus4, Rem…" : "Try CM7, F#7sus4, F#m…";
+    const examples = language === "it" ? ["DoM7", "Fa#7sus4", "Rem"] : ["CM7", "F#7sus4", "F#m"];
+    const prefix = language === "it" ? "Esempi: " : "Examples: ";
+    inputHint.innerHTML = prefix + examples.map((value) => `<button type="button" class="example-link" data-example="${value}">${value}</button>`).join(", ");
+  }
+
+  function changeLanguage(nextLanguage) {
+    if (nextLanguage === language) return;
+    const previousLanguage = language;
+    const previousInput = input.value;
+    let convertedInput = null;
+    let convertedChord = null;
+
+    try {
+      ChordKeys.parseChord(previousInput, previousLanguage);
+      convertedInput = convertChordSymbol(previousInput, previousLanguage, nextLanguage);
+    } catch (_error) { /* Leave partial input for the user to complete in the new notation. */ }
+
+    if (currentChord) {
+      try { convertedChord = convertChordSymbol(currentChord.input, previousLanguage, nextLanguage); }
+      catch (_error) { /* The existing pitch result can still be displayed. */ }
+    }
+
+    language = nextLanguage;
+    updateLanguageControls();
+    if (convertedInput !== null) input.value = convertedInput;
+    if (convertedChord !== null) {
+      try { showChord(ChordKeys.parseChord(convertedChord, language)); }
+      catch (_error) { renderKeyboard(); }
+    } else {
+      renderKeyboard();
+    }
+    if (!currentChord && input.value) renderSuggestions(input.value);
+    input.removeAttribute("aria-invalid");
+    status.textContent = "";
+  }
+
   function midiName(midi, preferFlats) {
-    const name = ChordKeys.noteName(midi % 12, preferFlats);
+    const name = ChordKeys.noteName(midi % 12, preferFlats, language);
     return `${name}${Math.floor(midi / 12) - 1}`;
   }
 
@@ -93,7 +156,7 @@
 
     keyboard.innerHTML = white.map((key) => makeKey(key, false)).join("") + black.map((key) => makeKey(key, true)).join("");
     keyboard.setAttribute("aria-label", currentChord
-      ? `Two-octave piano from ${midiName(firstMidi, preferFlats)} to ${midiName(lastMidi, preferFlats)}. Highlighted chord tones: ${currentChord.intervals.map((interval) => ChordKeys.noteName(currentChord.root.pitch + interval, preferFlats)).join(", ")}.`
+      ? `Two-octave piano from ${midiName(firstMidi, preferFlats)} to ${midiName(lastMidi, preferFlats)}. Highlighted chord tones: ${currentChord.intervals.map((interval) => ChordKeys.noteName(currentChord.root.pitch + interval, preferFlats, language)).join(", ")}.`
       : `Two-octave piano from ${midiName(firstMidi, false)} to ${midiName(lastMidi, false)}. Enter a chord to highlight its notes.`);
     rangeLabel.textContent = `${midiName(firstMidi, false)}–${midiName(lastMidi, false)}`;
     rangeDown.disabled = firstMidi <= 12;
@@ -106,9 +169,9 @@
     hideSuggestions();
     title.textContent = chord.input;
     const preferFlats = chord.root.flat;
-    const notes = chord.intervals.map((interval) => ChordKeys.noteName(chord.root.pitch + interval, preferFlats));
+    const notes = chord.intervals.map((interval) => ChordKeys.noteName(chord.root.pitch + interval, preferFlats, language));
     noteList.textContent = notes.length ? notes.join(" · ") : "No notes in this custom pitch set.";
-    if (chord.bass) noteList.textContent += ` · bass ${chord.bass.name}`;
+    if (chord.bass) noteList.textContent += ` · bass ${ChordKeys.noteName(chord.bass.pitch, chord.bass.flat, language)}`;
     playButton.disabled = !chord.intervals.length && !chord.bass;
     renderKeyboard();
   }
@@ -164,7 +227,7 @@
   form.addEventListener("submit", (event) => {
     event.preventDefault();
     try {
-      showChord(ChordKeys.parseChord(input.value));
+      showChord(ChordKeys.parseChord(input.value, language));
     } catch (error) {
       status.textContent = error.message;
       input.setAttribute("aria-invalid", "true");
@@ -198,11 +261,15 @@
     if (!event.target.closest(".input-wrap")) hideSuggestions();
   });
   playButton.addEventListener("click", playChord);
-  document.querySelectorAll("[data-example]").forEach((button) => {
-    button.addEventListener("click", () => {
+  inputHint.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-example]");
+    if (button) {
       input.value = button.dataset.example;
       form.requestSubmit();
-    });
+    }
+  });
+  document.querySelectorAll("[data-language]").forEach((button) => {
+    button.addEventListener("click", () => changeLanguage(button.dataset.language));
   });
 
   rangeDown.addEventListener("click", () => {
@@ -212,5 +279,6 @@
     if (firstMidi < 96) { firstMidi += 12; renderKeyboard(); }
   });
 
+  updateLanguageControls();
   renderKeyboard();
 })();

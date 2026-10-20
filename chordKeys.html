@@ -1,0 +1,721 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#f5f3ee">
+    <meta name="description" content="An offline piano chord dictionary. Enter a chord and see its keys on a virtual piano.">
+    <title>chordKeys — piano chord dictionary</title>
+    <style>
+:root {
+  color-scheme: light;
+  --ink: #202d28;
+  --muted: #737b74;
+  --paper: #f5f3ee;
+  --panel: #fffefa;
+  --line: #e5e2d9;
+  --green: #2e644f;
+  --green-dark: #234f3e;
+  --mint: #cce8d5;
+  --gold: #f4c969;
+  --red: #b34d3d;
+  font-family: ui-rounded, "Avenir Next", Avenir, "Segoe UI", sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; min-height: 100vh; background: var(--paper); }
+button, input { font: inherit; }
+button { -webkit-tap-highlight-color: transparent; }
+a { color: var(--green-dark); }
+
+.app-shell { width: min(100% - 40px, 900px); margin: 0 auto; padding: 20px 0 28px; }
+.masthead { display: flex; align-items: center; justify-content: space-between; }
+.wordmark { display: inline-flex; align-items: center; gap: 9px; color: var(--ink); font-weight: 750; font-size: 17px; letter-spacing: -.04em; text-decoration: none; }
+.wordmark-mark { display: inline-flex; align-items: center; justify-content: center; overflow: hidden; width: 28px; height: 28px; border-radius: 9px; color: white; background: var(--green); font-family: Georgia, serif; font-size: 16px; font-style: italic; line-height: 1; letter-spacing: -.1em; white-space: nowrap; }
+.wordmark-mark span { color: var(--gold); }
+.offline-tag { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 12px; font-weight: 600; }
+.offline-dot { width: 7px; height: 7px; border-radius: 50%; background: #67a47b; box-shadow: 0 0 0 3px #e1eee3; }
+
+.intro { padding: clamp(42px, 9vw, 80px) 0 28px; text-align: center; }
+.eyebrow { margin: 0 0 10px; color: var(--green); font-size: 10px; font-weight: 800; letter-spacing: .16em; }
+h1 { margin: 0; font-size: clamp(40px, 9vw, 70px); line-height: .99; letter-spacing: -.07em; font-weight: 740; }
+h1 span { color: var(--green); font-family: Georgia, "Times New Roman", serif; font-weight: 500; font-style: italic; letter-spacing: -.065em; }
+.intro-copy { margin: 17px 0 0; color: var(--muted); font-size: 15px; }
+
+.search-panel { width: min(100%, 620px); margin: 0 auto 24px; padding: 19px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); box-shadow: 0 8px 24px rgb(40 44 35 / 4%); }
+.search-panel label { display: block; margin-bottom: 8px; font-size: 12px; font-weight: 750; }
+.input-tools { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.input-tools label { margin: 0; }
+.language-toggle { display: inline-flex; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 8px; background: #f5f5f0; }
+.language-toggle button { min-height: 27px; padding: 0 9px; border: 0; border-radius: 5px; color: var(--muted); background: transparent; font-size: 10px; font-weight: 700; cursor: pointer; }
+.language-toggle button[aria-pressed="true"] { color: var(--green-dark); background: white; box-shadow: 0 1px 3px rgb(30 40 32 / 12%); }
+.input-row { display: flex; gap: 9px; }
+.input-wrap { position: relative; min-width: 0; flex: 1; }
+.input-row input { width: 100%; min-width: 0; height: 49px; padding: 0 14px; border: 1px solid #d9dcd3; border-radius: 10px; outline: none; color: var(--ink); background: #fff; font-size: 16px; transition: border-color .15s, box-shadow .15s; }
+.input-row input::placeholder { color: #a4aaa1; }
+.input-row input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgb(46 100 79 / 12%); }
+.suggestions { position: absolute; z-index: 5; top: calc(100% + 6px); right: 0; left: 0; overflow: hidden; padding: 5px; border: 1px solid var(--line); border-radius: 11px; background: white; box-shadow: 0 10px 25px rgb(31 44 36 / 14%); }
+.suggestions[hidden] { display: none; }
+.suggestion-option { display: flex; width: 100%; min-height: 38px; align-items: center; justify-content: space-between; padding: 0 10px; border: 0; border-radius: 7px; color: var(--ink); background: transparent; text-align: left; cursor: pointer; }
+.suggestion-option:hover, .suggestion-option[aria-selected="true"] { background: #edf4ed; }
+.suggestion-option strong { font-size: 13px; font-weight: 750; }
+.suggestion-option span { color: var(--muted); font-size: 10px; }
+.show-button { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: 12px; min-height: 49px; padding: 0 17px; border: 0; border-radius: 10px; color: white; background: var(--green); font-size: 13px; font-weight: 750; cursor: pointer; transition: background .15s, transform .15s; }
+.show-button:hover { background: var(--green-dark); }
+.show-button:active { transform: scale(.98); }
+.show-button span:last-child { font-size: 16px; }
+.input-hint { margin: 10px 0 0; color: var(--muted); font-size: 11px; }
+.example-link { padding: 2px 3px; border: 0; color: var(--green); background: none; font-weight: 700; cursor: pointer; text-decoration: underline; text-decoration-color: #b4c9b8; text-underline-offset: 2px; }
+.example-link:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px solid #a5c9ad; outline-offset: 3px; }
+.status { min-height: 0; margin: 0; color: var(--red); font-size: 12px; }
+.status:not(:empty) { margin-top: 9px; }
+
+.result-panel { padding: clamp(17px, 4vw, 26px); border: 1px solid var(--line); border-radius: 18px; background: var(--panel); box-shadow: 0 12px 30px rgb(40 44 35 / 4%); }
+.result-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 22px; }
+.result-heading .eyebrow { margin-bottom: 5px; font-size: 9px; }
+h2 { margin: 0; font-size: clamp(20px, 5vw, 27px); letter-spacing: -.04em; }
+.note-list { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
+.play-button { display: inline-flex; align-items: center; gap: 7px; min-height: 33px; margin-top: 11px; padding: 0 11px; border: 1px solid #c9d9cc; border-radius: 8px; color: var(--green-dark); background: #f0f6f0; font-size: 11px; font-weight: 750; cursor: pointer; }
+.play-button:hover:not(:disabled) { background: #e3efe4; }
+.play-button:disabled { color: #a3aaa1; border-color: #e5e7e1; background: #f5f5f1; cursor: default; }
+.play-button span { font-size: 9px; }
+.range-control { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 8px; padding: 4px; border: 1px solid var(--line); border-radius: 9px; color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.range-control button { display: grid; width: 29px; height: 29px; place-items: center; border: 0; border-radius: 6px; color: var(--green-dark); background: #edf3ed; font-size: 18px; cursor: pointer; }
+.range-control button:disabled { color: #b6bbb4; background: #f3f3ef; cursor: default; }
+.keyboard-scroll { overflow-x: auto; padding: 7px 3px 4px; overscroll-behavior-inline: contain; scrollbar-color: #c9d8cb transparent; scrollbar-width: thin; }
+.keyboard { position: relative; display: flex; width: 100%; min-width: 280px; height: clamp(132px, 31vw, 186px); user-select: none; }
+.key { position: relative; }
+.white-key { z-index: 1; flex: 1 1 0; min-width: 0; border: 1px solid #d7d8d1; border-right-width: 0; border-radius: 0 0 5px 5px; background: linear-gradient(180deg, #fff 0%, #fff 82%, #f3f2ec 100%); }
+.white-key:last-child { border-right-width: 1px; }
+.black-key { position: absolute; z-index: 2; top: 0; height: 61%; width: 4.3%; min-width: 11px; transform: translateX(-50%); border: 1px solid #111a17; border-radius: 0 0 4px 4px; background: linear-gradient(90deg, #1a2420, #303a35 70%, #18211d); box-shadow: 2px 3px 3px rgb(0 0 0 / 20%); }
+.key-tone::after { position: absolute; left: 50%; top: 62%; display: grid; width: clamp(17px, 4vw, 24px); height: clamp(17px, 4vw, 24px); place-items: center; transform: translate(-50%, -50%); border: 2px solid white; border-radius: 50%; color: var(--ink); background: var(--mint); box-shadow: 0 1px 5px rgb(0 0 0 / 16%); content: ""; }
+.key-tone.root-tone::after { background: var(--gold); }
+.key-tone.bass-tone::after { border-color: #f3bb89; background: #f3bb89; }
+.black-key.key-tone::after { top: 66%; width: clamp(15px, 3.5vw, 20px); height: clamp(15px, 3.5vw, 20px); border-color: #28352e; box-shadow: 0 1px 4px rgb(0 0 0 / 45%); }
+.black-key.key-tone.root-tone::after { border-color: #ffe3a1; }
+.key-label { position: absolute; right: 1px; bottom: 6px; left: 1px; overflow: hidden; color: #7a8078; font-size: clamp(7px, 1.8vw, 10px); line-height: 1; text-align: center; text-overflow: clip; white-space: nowrap; }
+.black-key .key-label { bottom: 3px; color: #d7ddd8; font-size: clamp(6px, 1.6vw, 8px); }
+.key-tone .key-label { color: var(--green-dark); font-weight: 800; }
+.black-key.key-tone .key-label { color: white; }
+.legend { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 15px; color: var(--muted); font-size: 10px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend-dot { width: 10px; height: 10px; border: 1px solid white; border-radius: 50%; background: var(--mint); box-shadow: 0 0 0 1px #ccd2c8; }
+.root-dot { background: var(--gold); }
+.bass-dot { background: #f3bb89; box-shadow: 0 0 0 1px #e3aa7d; }
+
+.syntax-card { margin: 15px 0 0; padding: 14px 17px; border: 1px solid var(--line); border-radius: 13px; background: rgb(255 254 250 / 65%); }
+.syntax-card summary { color: var(--green-dark); font-size: 12px; font-weight: 750; cursor: pointer; }
+.syntax-content { padding-top: 6px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.syntax-content p { margin: 8px 0 0; }
+code { padding: 2px 4px; border-radius: 4px; color: var(--green-dark); background: #edf2e9; font-size: .95em; }
+footer { display: flex; justify-content: space-between; gap: 12px; padding: 25px 2px 0; color: #899087; font-size: 10px; }
+
+@media (max-width: 520px) {
+  .app-shell { width: min(100% - 28px, 900px); padding-top: 14px; }
+  .intro { padding-top: 48px; }
+  .search-panel { padding: 15px; }
+  .input-row { gap: 7px; }
+  .show-button { gap: 7px; padding: 0 11px; font-size: 12px; }
+  .result-heading { align-items: flex-start; }
+  .range-control { gap: 4px; margin-top: 2px; }
+  .range-control button { width: 25px; height: 27px; }
+  .legend { gap: 10px; }
+  footer { flex-direction: column; gap: 5px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+}
+
+    </style>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="masthead">
+        <a class="wordmark" href="#top" aria-label="chordKeys home"><span class="wordmark-mark" aria-hidden="true">c<span>k</span></span>chordKeys</a>
+        <span class="offline-tag"><span class="offline-dot" aria-hidden="true"></span> Works offline</span>
+      </header>
+
+      <section class="intro" id="top" aria-labelledby="page-title">
+        <p class="eyebrow">YOUR POCKET CHORD DICTIONARY</p>
+        <h1 id="page-title">Find the keys<br><span>inside a chord.</span></h1>
+        <p class="intro-copy">Type a chord. See every note light up on the piano.</p>
+      </section>
+
+      <section class="search-panel" aria-label="Find a chord">
+        <form id="chord-form" autocomplete="off">
+          <div class="input-tools">
+            <label id="chord-label" for="chord-input">Chord symbol</label>
+            <div class="language-toggle" role="group" aria-label="Chord notation language">
+              <button id="language-english" type="button" data-language="en" aria-pressed="true">English</button>
+              <button id="language-italian" type="button" data-language="it" aria-pressed="false">Italiano</button>
+            </div>
+          </div>
+          <div class="input-row">
+            <div class="input-wrap">
+              <input id="chord-input" name="chord" type="text" role="combobox" aria-haspopup="listbox" placeholder="Try CM7, F#7sus4, F#m…" autocapitalize="off" spellcheck="false" aria-autocomplete="list" aria-expanded="false" aria-controls="chord-suggestions" aria-describedby="input-hint chord-status" required>
+              <div id="chord-suggestions" class="suggestions" role="listbox" aria-label="Chord suggestions" hidden></div>
+            </div>
+            <button type="submit" class="show-button"><span>Show keys</span><span aria-hidden="true">↗</span></button>
+          </div>
+          <p id="input-hint" class="input-hint">Examples: <button type="button" class="example-link" data-example="CM7">CM7</button>, <button type="button" class="example-link" data-example="F#7sus4">F#7sus4</button>, <button type="button" class="example-link" data-example="F#m">F#m</button></p>
+        </form>
+        <p id="chord-status" class="status" role="status" aria-live="polite"></p>
+      </section>
+
+      <section class="result-panel" aria-label="Piano chord result">
+        <div class="result-heading">
+          <div>
+            <p class="eyebrow">YOUR CHORD</p>
+            <h2 id="result-title">Ready when you are</h2>
+            <p id="note-list" class="note-list">Enter a chord symbol to reveal its notes.</p>
+            <button id="play-chord" class="play-button" type="button" disabled><span aria-hidden="true">▶</span> Play chord</button>
+          </div>
+          <div class="range-control" aria-label="Keyboard register">
+            <button id="range-down" type="button" aria-label="Move keyboard down one octave" title="Move down one octave">−</button>
+            <span id="range-label">C3–B4</span>
+            <button id="range-up" type="button" aria-label="Move keyboard up one octave" title="Move up one octave">+</button>
+          </div>
+        </div>
+
+        <div class="keyboard-scroll" tabindex="0" aria-label="Scrollable piano keyboard">
+          <div id="keyboard" class="keyboard" role="img" aria-label="Two-octave piano keyboard. Enter a chord to highlight one key for each chord tone."></div>
+        </div>
+        <div class="legend" aria-label="Key marker legend">
+          <span><i class="legend-dot root-dot" aria-hidden="true"></i> Root</span>
+          <span><i class="legend-dot chord-dot" aria-hidden="true"></i> Chord tone</span>
+          <span><i class="legend-dot bass-dot" aria-hidden="true"></i> Bass note</span>
+        </div>
+      </section>
+
+      <details class="syntax-card">
+        <summary>Need a less common chord?</summary>
+        <div class="syntax-content">
+          <p>Combine qualities, extensions, and alterations: <code>Cdim7</code>, <code>Bbmaj9</code>, <code>G7b9</code>, <code>Cadd9</code>, or <code>C/E</code> (slash bass).</p>
+          <p>For any custom pitch set, enter a root and semitone intervals from it, from 0 to 11. For example, <code>C:[0,4,7,10]</code> is a C dominant seventh. See the <a href="#full-syntax">full notation guide</a> for details.</p>
+        </div>
+      </details>
+
+      <details class="syntax-card" id="full-syntax">
+        <summary>Full notation guide</summary>
+        <div class="syntax-content">
+          <p><strong>Roots:</strong> A–G or Do–Si, optionally followed by <code>#</code> or <code>b</code> (for example <code>F#</code>, <code>Db</code>, <code>Fa#</code>, or <code>Sib</code>). A slash note sets a bass note, as in <code>C/E</code> or <code>Do/Mi</code>.</p>
+          <p><strong>Qualities:</strong> major is the default and can also be written <code>M</code>, <code>maj</code>, or <code>major</code>; minor is <code>m</code>, <code>min</code>, or <code>-</code>; diminished is <code>dim</code>, <code>o</code>, or <code>°</code>; augmented is <code>aug</code> or <code>+</code>; suspended is <code>sus</code>, <code>sus2</code>, or <code>sus4</code>; power chord is <code>5</code>.</p>
+          <p><strong>Extensions:</strong> <code>6</code>, <code>7</code>, <code>9</code>, <code>11</code>, and <code>13</code>. Prefix an extension with <code>maj</code> or <code>M</code> for a major seventh, as in <code>Bbmaj9</code> or <code>CM7</code>.</p>
+          <p><strong>Alter/add/remove tones:</strong> use <code>b</code> or <code>#</code> before a degree, <code>add</code> to add a degree, or <code>no</code> to omit one. Examples: <code>G7b9</code>, <code>C#11</code>, <code>Cadd9</code>, <code>C7no5</code>.</p>
+          <p><strong>Custom pitch sets:</strong> write a root and semitone intervals from that root, each from 0–11: <code>C:[0,4,7,10]</code>. Duplicate intervals are ignored; <code>C:[]</code> represents an empty set.</p>
+        </div>
+      </details>
+
+      <footer><span>Made for curious hands.</span><span>chordKeys <span aria-hidden="true">·</span> No account. No connection.</span></footer>
+    </main>
+    <script>
+(function (root, factory) {
+  const api = factory();
+  if (typeof module === "object" && module.exports) module.exports = api;
+  if (root) root.ChordKeys = api;
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  const PITCHES = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+  const SHARPS = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"];
+  const FLATS = ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"];
+  const ITALIAN_SHARPS = ["Do", "Do♯", "Re", "Re♯", "Mi", "Fa", "Fa♯", "Sol", "Sol♯", "La", "La♯", "Si"];
+  const ITALIAN_FLATS = ["Do", "Re♭", "Re", "Mi♭", "Mi", "Fa", "Sol♭", "Sol", "La♭", "La", "Si♭", "Si"];
+  const ENGLISH_ROOTS = ["C", "C#", "Db", "D", "D#", "Eb", "E", "Fb", "E#", "F", "F#", "Gb", "G", "G#", "Ab", "A", "A#", "Bb", "B", "Cb", "B#"];
+  const ITALIAN_ROOTS = ["Do", "Do#", "Reb", "Re", "Re#", "Mib", "Mi", "Mi#", "Fab", "Fa", "Fa#", "Solb", "Sol", "Sol#", "Lab", "La", "La#", "Sib", "Si", "Si#", "Dob"];
+  const ITALIAN_TO_ENGLISH = { do: "C", re: "D", mi: "E", fa: "F", sol: "G", la: "A", si: "B" };
+  const SUGGESTION_SUFFIXES = [
+    "", "M", "maj", "major", "m", "min", "dim", "dim7", "aug", "+", "5", "sus", "sus2", "sus4", "6", "m6", "7", "m7", "maj7", "M7", "m7b5",
+    "9", "m9", "maj9", "M9", "11", "m11", "maj11", "M11", "13", "m13", "maj13", "M13", "7sus2", "7sus4", "maj7sus4",
+    "add9", "add11", "sus2add9", "sus4add9", "7b5", "7#5", "7b9", "7#9", "7#11", "7b13", "7no5"
+  ];
+  let suggestionCatalog;
+
+  function notePattern(language) {
+    return language === "it" ? "Sol|Do|Re|Mi|Fa|La|Si" : "[A-G]";
+  }
+
+  function parseNote(text, language = "en") {
+    const match = language === "it"
+      ? /^(Sol|Do|Re|Mi|Fa|La|Si)([#b♯♭]?)$/i.exec(text)
+      : /^([A-G])([#b♯♭]?)$/i.exec(text);
+    if (!match) {
+      const examples = language === "it" ? "Do, Re, Mi, Fa, Sol, La, or Si, optionally followed by # or b" : "A–G, optionally followed by # or b";
+      throw new Error(`“${text}” is not a valid note. Use ${examples}.`);
+    }
+    const syllable = match[1];
+    const letter = language === "it" ? ITALIAN_TO_ENGLISH[syllable.toLowerCase()] : syllable.toUpperCase();
+    const accidental = match[2];
+    const offset = accidental === "#" || accidental === "♯" ? 1 : accidental === "b" || accidental === "♭" ? -1 : 0;
+    const naturalName = language === "it" ? syllable[0].toUpperCase() + syllable.slice(1).toLowerCase() : letter;
+    return { name: naturalName + accidental.replace("#", "♯").replace("b", "♭"), pitch: (PITCHES[letter] + offset + 12) % 12, flat: accidental === "b" || accidental === "♭" };
+  }
+
+  function intervalsFor(suffix) {
+    let remaining = suffix;
+    let intervals;
+    let quality = "major";
+
+    // Pull out explicit additions, omissions, and alterations before reading the quality/extension.
+    const additions = [];
+    const omissions = [];
+    const alterations = [];
+    remaining = remaining.replace(/add(13|11|9|7|6|5|4|3|2|1)|no(13|11|9|7|6|5|4|3|2|1)|([b#♭♯])(13|11|9|7|6|5|4|3|2|1)/gi, (token, add, omit, accidental, degree) => {
+      if (add) additions.push(Number(add));
+      else if (omit) omissions.push(Number(omit));
+      else alterations.push({ accidental: accidental === "b" || accidental === "♭" ? -1 : 1, degree: Number(degree) });
+      return "";
+    });
+
+    let suspended = null;
+    remaining = remaining.replace(/sus(2|4)?/i, (_token, degree) => {
+      suspended = degree === "2" ? 2 : 5;
+      return "";
+    });
+
+    // Extension symbols may precede or follow the suspension marker (7sus4 / sus4add9).
+    let extension = null;
+    let majorExtension = false;
+    remaining = remaining.replace(/(maj|major|M)?(13|11|9|7|6)/, (token, major, number) => {
+      extension = Number(number);
+      majorExtension = Boolean(major);
+      return "";
+    });
+
+    const qualityToken = remaining.trim();
+    if (qualityToken === "" || /^(M|maj|major)$/i.test(qualityToken) && qualityToken !== "m" && qualityToken !== "min") {
+      quality = "major";
+    } else if (/^(m|min|-)$/i.test(qualityToken)) {
+      quality = "minor";
+    } else if (/^(dim|o|°)$/i.test(qualityToken)) {
+      quality = "diminished";
+    } else if (/^(aug|\+|\+5)$/i.test(qualityToken)) {
+      quality = "augmented";
+    } else if (/^5$/.test(qualityToken)) {
+      quality = "power";
+    } else {
+      throw new Error(`I couldn't read “${suffix || "the chord"}”. Check the quality/extension spelling, or use custom intervals like C:[0,4,7].`);
+    }
+
+    if (suspended !== null) intervals = [0, suspended, 7];
+    else if (quality === "minor") intervals = [0, 3, 7];
+    else if (quality === "diminished") intervals = [0, 3, 6];
+    else if (quality === "augmented") intervals = [0, 4, 8];
+    else if (quality === "power") intervals = [0, 7];
+    else intervals = [0, 4, 7];
+
+    if (extension !== null) {
+      if (extension >= 7) {
+        if (quality === "diminished" && extension === 7) intervals.push(9);
+        else intervals.push(majorExtension ? 11 : 10);
+      }
+      if (extension >= 9) intervals.push(14);
+      if (extension >= 11) intervals.push(17);
+      if (extension >= 13) intervals.push(21);
+      if (extension === 6) intervals.push(9);
+    }
+
+    const degreeIntervals = { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: majorExtension ? 11 : 10, 9: 14, 11: 17, 13: 21 };
+    for (const alteration of alterations) {
+      const degree = alteration.degree;
+      const base = degreeIntervals[degree];
+      if (base === undefined) continue;
+      const altered = base + alteration.accidental;
+      const candidates = degree === 3 ? [3, 4] : degree === 5 ? [6, 7, 8] : degree === 7 ? [9, 10, 11] : degree === 9 ? [13, 14, 15] : degree === 11 ? [16, 17, 18] : degree === 13 ? [20, 21, 22] : [base - 1, base, base + 1];
+      intervals = intervals.filter((value) => !candidates.includes(value));
+      intervals.push(altered);
+    }
+
+    const addedIntervals = { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11, 9: 14, 11: 17, 13: 21 };
+    for (const degree of additions) if (addedIntervals[degree] !== undefined) intervals.push(addedIntervals[degree]);
+
+    const omittedIntervals = { 2: [1, 2, 3], 3: [3, 4], 4: [4, 5, 6], 5: [6, 7, 8], 6: [8, 9, 10], 7: [9, 10, 11], 9: [13, 14, 15], 11: [16, 17, 18], 13: [20, 21, 22] };
+    for (const degree of omissions) {
+      if (degree === 1) intervals = intervals.filter((value) => value !== 0);
+      else intervals = intervals.filter((value) => !(omittedIntervals[degree] || []).includes(value));
+    }
+
+    return [...new Set(intervals.map((value) => ((value % 12) + 12) % 12))].sort((a, b) => a - b);
+  }
+
+  function parseChord(input, language = "en") {
+    const source = String(input || "").trim();
+    if (!source) throw new Error("Enter a chord symbol to get started.");
+
+    // Custom interval syntax deliberately accepts only pitch-class intervals (0–11).
+    const custom = /^([^:]+):\s*\[\s*(\d+(?:\s*,\s*\d+)*)?\s*\]$/.exec(source);
+    if (custom) {
+      const root = parseNote(custom[1], language);
+      const values = custom[2] ? custom[2].split(",").map(Number) : [];
+      if (values.some((value) => value < 0 || value > 11)) throw new Error("Custom intervals must be semitones from 0 to 11.");
+      return { input: source, root, bass: null, intervals: [...new Set(values)].sort((a, b) => a - b), custom: true };
+    }
+
+    let symbol = source;
+    let bass = null;
+    const slash = new RegExp(`/(${notePattern(language)})([#b♯♭]?)$`, "i").exec(symbol);
+    if (slash) {
+      bass = parseNote(slash[1] + slash[2], language);
+      symbol = symbol.slice(0, slash.index);
+    }
+
+    const match = new RegExp(`^(${notePattern(language)})([#b♯♭]?)(.*)$`, "i").exec(symbol);
+    if (!match) throw new Error(language === "it"
+      ? "Inizia con una nota da Do, Re, Mi, Fa, Sol, La o Si, per esempio Do, Fa# o Sib."
+      : "Start with a root note from A to G, such as C, F# or Bb.");
+    const root = parseNote(match[1] + match[2], language);
+    const intervals = intervalsFor(match[3].trim());
+    return { input: source, root, bass, intervals, custom: false };
+  }
+
+  function noteName(pitch, preferFlats, language = "en") {
+    const names = language === "it" ? (preferFlats ? ITALIAN_FLATS : ITALIAN_SHARPS) : (preferFlats ? FLATS : SHARPS);
+    return names[((pitch % 12) + 12) % 12];
+  }
+
+  function selectPitchInstances(firstMidi, keyCount, rootPitch, pitches) {
+    const lastMidi = firstMidi + keyCount - 1;
+    const rootMidi = Array.from({ length: keyCount }, (_unused, index) => firstMidi + index)
+      .find((midi) => midi % 12 === rootPitch);
+    if (rootMidi === undefined) return new Set();
+
+    const selected = new Set();
+    for (const pitch of new Set(pitches.map((value) => ((value % 12) + 12) % 12))) {
+      if (pitch === rootPitch) {
+        selected.add(rootMidi);
+        continue;
+      }
+      let chosen;
+      for (let midi = rootMidi + 1; midi <= lastMidi; midi += 1) {
+        if (midi % 12 === pitch) { chosen = midi; break; }
+      }
+      if (chosen === undefined) {
+        for (let midi = rootMidi - 1; midi >= firstMidi; midi -= 1) {
+          if (midi % 12 === pitch) { chosen = midi; break; }
+        }
+      }
+      if (chosen !== undefined) selected.add(chosen);
+    }
+    return selected;
+  }
+
+  function suggestChords(query, limit = 7, language = "en") {
+    const normalized = String(query || "").trim().replace(/\s+/g, "").replace(/♯/g, "#").replace(/♭/g, "b").toLowerCase();
+    if (!normalized) return [];
+    const roots = language === "it" ? ITALIAN_ROOTS : ENGLISH_ROOTS;
+    suggestionCatalog ||= {};
+    suggestionCatalog[language] ||= roots.flatMap((root) => SUGGESTION_SUFFIXES.map((suffix) => `${root}${suffix}`));
+    return suggestionCatalog[language].filter((symbol) => symbol.toLowerCase().startsWith(normalized)).slice(0, limit);
+  }
+
+  function getChordMidiNotes(chord, firstMidi) {
+    const rootOffset = (chord.root.pitch - (firstMidi % 12) + 12) % 12;
+    const rootMidi = firstMidi + rootOffset;
+    const notes = chord.intervals.map((interval) => rootMidi + interval);
+    if (chord.bass) {
+      const bassOffset = (chord.bass.pitch - chord.root.pitch + 12) % 12;
+      notes.push(rootMidi - 12 + bassOffset);
+    }
+    return [...new Set(notes)];
+  }
+
+  return { parseChord, parseNote, noteName, selectPitchInstances, suggestChords, getChordMidiNotes, SHARPS, FLATS };
+});
+
+  </script>
+  <script>
+(function () {
+  "use strict";
+
+  const form = document.getElementById("chord-form");
+  const input = document.getElementById("chord-input");
+  const status = document.getElementById("chord-status");
+  const keyboard = document.getElementById("keyboard");
+  const title = document.getElementById("result-title");
+  const noteList = document.getElementById("note-list");
+  const suggestions = document.getElementById("chord-suggestions");
+  const playButton = document.getElementById("play-chord");
+  const chordLabel = document.getElementById("chord-label");
+  const inputHint = document.getElementById("input-hint");
+  const rangeLabel = document.getElementById("range-label");
+  const rangeDown = document.getElementById("range-down");
+  const rangeUp = document.getElementById("range-up");
+  const WHITE_PITCHES = new Set([0, 2, 4, 5, 7, 9, 11]);
+  let firstMidi = 48; // C3; exactly 24 semitones are always shown.
+  let currentChord = null;
+  let activeSuggestion = -1;
+  let audioContext = null;
+  let language = "en";
+
+  function hideSuggestions() {
+    suggestions.hidden = true;
+    input.setAttribute("aria-expanded", "false");
+    input.removeAttribute("aria-activedescendant");
+    activeSuggestion = -1;
+  }
+
+  function renderSuggestions(query) {
+    const matches = ChordKeys.suggestChords(query, 7, language);
+    if (!matches.length) { hideSuggestions(); return; }
+    activeSuggestion = -1;
+    suggestions.innerHTML = matches.map((symbol, index) =>
+      `<div id="chord-option-${index}" class="suggestion-option" role="option" aria-selected="false" data-symbol="${symbol}" tabindex="-1"><strong>${symbol}</strong><span>Show this chord</span></div>`
+    ).join("");
+    suggestions.hidden = false;
+    input.setAttribute("aria-expanded", "true");
+    input.removeAttribute("aria-activedescendant");
+  }
+
+  function setActiveSuggestion(index) {
+    const options = [...suggestions.querySelectorAll("[role=option]")];
+    if (!options.length) return;
+    activeSuggestion = (index + options.length) % options.length;
+    options.forEach((option, optionIndex) => option.setAttribute("aria-selected", String(optionIndex === activeSuggestion)));
+    input.setAttribute("aria-activedescendant", options[activeSuggestion].id);
+    options[activeSuggestion].scrollIntoView({ block: "nearest" });
+  }
+
+  function chooseSuggestion(symbol) {
+    input.value = symbol;
+    hideSuggestions();
+    form.requestSubmit();
+  }
+
+  function convertNotePrefix(symbol, fromLanguage, toLanguage) {
+    const pattern = fromLanguage === "it" ? /^(Sol|Do|Re|Mi|Fa|La|Si)([#b♯♭]?)/i : /^([A-G])([#b♯♭]?)/i;
+    const match = pattern.exec(symbol);
+    if (!match) return symbol;
+    const note = ChordKeys.parseNote(match[0], fromLanguage);
+    return ChordKeys.noteName(note.pitch, note.flat, toLanguage) + symbol.slice(match[0].length);
+  }
+
+  function convertChordSymbol(symbol, fromLanguage, toLanguage) {
+    let converted = convertNotePrefix(symbol.trim(), fromLanguage, toLanguage);
+    const slash = /\/([^/]+)$/.exec(converted);
+    if (slash) {
+      const bass = convertNotePrefix(slash[1], fromLanguage, toLanguage);
+      converted = `${converted.slice(0, slash.index + 1)}${bass}`;
+    }
+    return converted;
+  }
+
+  function updateLanguageControls() {
+    document.querySelectorAll("[data-language]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.language === language));
+    });
+    chordLabel.textContent = language === "it" ? "Simbolo dell’accordo" : "Chord symbol";
+    input.placeholder = language === "it" ? "Prova DoM7, Fa#7sus4, Rem…" : "Try CM7, F#7sus4, F#m…";
+    const examples = language === "it" ? ["DoM7", "Fa#7sus4", "Rem"] : ["CM7", "F#7sus4", "F#m"];
+    const prefix = language === "it" ? "Esempi: " : "Examples: ";
+    inputHint.innerHTML = prefix + examples.map((value) => `<button type="button" class="example-link" data-example="${value}">${value}</button>`).join(", ");
+  }
+
+  function changeLanguage(nextLanguage) {
+    if (nextLanguage === language) return;
+    const previousLanguage = language;
+    const previousInput = input.value;
+    let convertedInput = null;
+    let convertedChord = null;
+
+    try {
+      ChordKeys.parseChord(previousInput, previousLanguage);
+      convertedInput = convertChordSymbol(previousInput, previousLanguage, nextLanguage);
+    } catch (_error) { /* Leave partial input for the user to complete in the new notation. */ }
+
+    if (currentChord) {
+      try { convertedChord = convertChordSymbol(currentChord.input, previousLanguage, nextLanguage); }
+      catch (_error) { /* The existing pitch result can still be displayed. */ }
+    }
+
+    language = nextLanguage;
+    updateLanguageControls();
+    if (convertedInput !== null) input.value = convertedInput;
+    if (convertedChord !== null) {
+      try { showChord(ChordKeys.parseChord(convertedChord, language)); }
+      catch (_error) { renderKeyboard(); }
+    } else {
+      renderKeyboard();
+    }
+    if (!currentChord && input.value) renderSuggestions(input.value);
+    input.removeAttribute("aria-invalid");
+    status.textContent = "";
+  }
+
+  function midiName(midi, preferFlats) {
+    const name = ChordKeys.noteName(midi % 12, preferFlats, language);
+    return `${name}${Math.floor(midi / 12) - 1}`;
+  }
+
+  function renderKeyboard() {
+    const lastMidi = firstMidi + 23;
+    const preferFlats = currentChord ? currentChord.root.flat : false;
+    const white = [];
+    const black = [];
+    for (let midi = firstMidi; midi <= lastMidi; midi += 1) {
+      const pitch = midi % 12;
+      if (WHITE_PITCHES.has(pitch)) white.push({ midi, pitch });
+      else black.push({ midi, pitch });
+    }
+
+    const whiteIndex = new Map(white.map((key, index) => [key.midi, index]));
+    const tones = currentChord ? new Set(currentChord.intervals.map((interval) => (currentChord.root.pitch + interval) % 12)) : new Set();
+    const bassPitch = currentChord ? (currentChord.bass || currentChord.root).pitch : null;
+    const rootPitch = currentChord ? currentChord.root.pitch : null;
+    const displayPitches = new Set(tones);
+    if (currentChord && currentChord.bass) displayPitches.add(bassPitch);
+    const selectedMidi = currentChord
+      ? ChordKeys.selectPitchInstances(firstMidi, 24, rootPitch, [...displayPitches])
+      : new Set();
+    const makeKey = (key, isBlack) => {
+      const highlighted = selectedMidi.has(key.midi);
+      const isRoot = highlighted && key.pitch === rootPitch;
+      const isBass = Boolean(highlighted && currentChord && currentChord.bass && key.pitch === bassPitch);
+      const classes = ["key", isBlack ? "black-key" : "white-key"];
+      if (highlighted) classes.push("key-tone");
+      if (isRoot) classes.push("root-tone");
+      if (isBass) classes.push("bass-tone");
+      const keyName = midiName(key.midi, preferFlats);
+      const marker = highlighted ? `${keyName}, ${isRoot ? "root" : isBass ? "slash bass" : "chord tone"}` : keyName;
+      const style = isBlack ? ` style="left:${((whiteIndex.get(key.midi - 1) + 1) / 14) * 100}%"` : "";
+      return `<div class="${classes.join(" ")}"${style} role="img" aria-label="${marker}"><span class="key-label" aria-hidden="true">${keyName}</span></div>`;
+    };
+
+    keyboard.innerHTML = white.map((key) => makeKey(key, false)).join("") + black.map((key) => makeKey(key, true)).join("");
+    keyboard.setAttribute("aria-label", currentChord
+      ? `Two-octave piano from ${midiName(firstMidi, preferFlats)} to ${midiName(lastMidi, preferFlats)}. Highlighted chord tones: ${currentChord.intervals.map((interval) => ChordKeys.noteName(currentChord.root.pitch + interval, preferFlats, language)).join(", ")}.`
+      : `Two-octave piano from ${midiName(firstMidi, false)} to ${midiName(lastMidi, false)}. Enter a chord to highlight its notes.`);
+    rangeLabel.textContent = `${midiName(firstMidi, false)}–${midiName(lastMidi, false)}`;
+    rangeDown.disabled = firstMidi <= 12;
+    rangeUp.disabled = firstMidi >= 96;
+  }
+
+  function showChord(chord) {
+    currentChord = chord;
+    status.textContent = "";
+    hideSuggestions();
+    title.textContent = chord.input;
+    const preferFlats = chord.root.flat;
+    const notes = chord.intervals.map((interval) => ChordKeys.noteName(chord.root.pitch + interval, preferFlats, language));
+    noteList.textContent = notes.length ? notes.join(" · ") : "No notes in this custom pitch set.";
+    if (chord.bass) noteList.textContent += ` · bass ${ChordKeys.noteName(chord.bass.pitch, chord.bass.flat, language)}`;
+    playButton.disabled = !chord.intervals.length && !chord.bass;
+    renderKeyboard();
+  }
+
+  function addSynthVoice(context, midi, volume, startTime) {
+    const frequency = 440 * (2 ** ((midi - 69) / 12));
+    const oscillator = context.createOscillator();
+    const envelope = context.createGain();
+    oscillator.type = "triangle";
+    oscillator.frequency.setValueAtTime(frequency, startTime);
+    envelope.gain.setValueAtTime(0.0001, startTime);
+    envelope.gain.exponentialRampToValueAtTime(volume, startTime + 0.018);
+    envelope.gain.exponentialRampToValueAtTime(0.0001, startTime + 1.15);
+    oscillator.connect(envelope);
+    envelope.connect(context.destination);
+    oscillator.start(startTime);
+    oscillator.stop(startTime + 1.17);
+
+    // A quiet, quickly fading octave harmonic gives the synthesized tone a plucked edge.
+    const harmonic = context.createOscillator();
+    const harmonicEnvelope = context.createGain();
+    harmonic.type = "sine";
+    harmonic.frequency.setValueAtTime(frequency * 2, startTime);
+    harmonicEnvelope.gain.setValueAtTime(0.0001, startTime);
+    harmonicEnvelope.gain.exponentialRampToValueAtTime(volume * 0.16, startTime + 0.012);
+    harmonicEnvelope.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.28);
+    harmonic.connect(harmonicEnvelope);
+    harmonicEnvelope.connect(context.destination);
+    harmonic.start(startTime);
+    harmonic.stop(startTime + 0.3);
+  }
+
+  async function playChord() {
+    if (!currentChord) return;
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) {
+      status.textContent = "Audio playback is not supported by this browser.";
+      return;
+    }
+    try {
+      audioContext ||= new AudioContextClass();
+      if (audioContext.state === "suspended") await audioContext.resume();
+      const uniqueNotes = ChordKeys.getChordMidiNotes(currentChord, firstMidi);
+      const volume = Math.min(0.075, 0.055 * Math.sqrt(3 / uniqueNotes.length));
+      const startTime = audioContext.currentTime + 0.025;
+      uniqueNotes.forEach((midi) => addSynthVoice(audioContext, midi, volume, startTime));
+      status.textContent = `Playing a synthesized ${currentChord.input}.`;
+    } catch (_error) {
+      status.textContent = "Couldn't start audio. Try tapping Play chord again.";
+    }
+  }
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    try {
+      showChord(ChordKeys.parseChord(input.value, language));
+    } catch (error) {
+      status.textContent = error.message;
+      input.setAttribute("aria-invalid", "true");
+      input.focus();
+    }
+  });
+
+  input.addEventListener("input", () => {
+    input.removeAttribute("aria-invalid");
+    renderSuggestions(input.value);
+  });
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowDown" && !suggestions.hidden) {
+      event.preventDefault();
+      setActiveSuggestion(activeSuggestion + 1);
+    } else if (event.key === "ArrowUp" && !suggestions.hidden) {
+      event.preventDefault();
+      setActiveSuggestion(activeSuggestion < 0 ? suggestions.children.length - 1 : activeSuggestion - 1);
+    } else if (event.key === "Enter" && !suggestions.hidden && activeSuggestion >= 0) {
+      event.preventDefault();
+      chooseSuggestion(suggestions.children[activeSuggestion].dataset.symbol);
+    } else if (event.key === "Escape" && !suggestions.hidden) {
+      hideSuggestions();
+    }
+  });
+  suggestions.addEventListener("click", (event) => {
+    const option = event.target.closest("[data-symbol]");
+    if (option) chooseSuggestion(option.dataset.symbol);
+  });
+  document.addEventListener("pointerdown", (event) => {
+    if (!event.target.closest(".input-wrap")) hideSuggestions();
+  });
+  playButton.addEventListener("click", playChord);
+  inputHint.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-example]");
+    if (button) {
+      input.value = button.dataset.example;
+      form.requestSubmit();
+    }
+  });
+  document.querySelectorAll("[data-language]").forEach((button) => {
+    button.addEventListener("click", () => changeLanguage(button.dataset.language));
+  });
+
+  rangeDown.addEventListener("click", () => {
+    if (firstMidi > 12) { firstMidi -= 12; renderKeyboard(); }
+  });
+  rangeUp.addEventListener("click", () => {
+    if (firstMidi < 96) { firstMidi += 12; renderKeyboard(); }
+  });
+
+  updateLanguageControls();
+  renderKeyboard();
+})();
+
+  </script>
+</body>
+</html>

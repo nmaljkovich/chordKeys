@@ -8,7 +8,11 @@
   const PITCHES = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
   const SHARPS = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"];
   const FLATS = ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"];
-  const SUGGESTION_ROOTS = ["C", "C#", "Db", "D", "D#", "Eb", "E", "Fb", "E#", "F", "F#", "Gb", "G", "G#", "Ab", "A", "A#", "Bb", "B", "Cb", "B#"];
+  const ITALIAN_SHARPS = ["Do", "Do♯", "Re", "Re♯", "Mi", "Fa", "Fa♯", "Sol", "Sol♯", "La", "La♯", "Si"];
+  const ITALIAN_FLATS = ["Do", "Re♭", "Re", "Mi♭", "Mi", "Fa", "Sol♭", "Sol", "La♭", "La", "Si♭", "Si"];
+  const ENGLISH_ROOTS = ["C", "C#", "Db", "D", "D#", "Eb", "E", "Fb", "E#", "F", "F#", "Gb", "G", "G#", "Ab", "A", "A#", "Bb", "B", "Cb", "B#"];
+  const ITALIAN_ROOTS = ["Do", "Do#", "Reb", "Re", "Re#", "Mib", "Mi", "Mi#", "Fab", "Fa", "Fa#", "Solb", "Sol", "Sol#", "Lab", "La", "La#", "Sib", "Si", "Si#", "Dob"];
+  const ITALIAN_TO_ENGLISH = { do: "C", re: "D", mi: "E", fa: "F", sol: "G", la: "A", si: "B" };
   const SUGGESTION_SUFFIXES = [
     "", "M", "maj", "major", "m", "min", "dim", "dim7", "aug", "+", "5", "sus", "sus2", "sus4", "6", "m6", "7", "m7", "maj7", "M7", "m7b5",
     "9", "m9", "maj9", "M9", "11", "m11", "maj11", "M11", "13", "m13", "maj13", "M13", "7sus2", "7sus4", "maj7sus4",
@@ -16,13 +20,24 @@
   ];
   let suggestionCatalog;
 
-  function parseNote(text) {
-    const match = /^([A-Ga-g])([#b♯♭]?)$/.exec(text);
-    if (!match) throw new Error(`“${text}” is not a valid note. Use a note from A to G, optionally followed by # or b.`);
-    const letter = match[1].toUpperCase();
+  function notePattern(language) {
+    return language === "it" ? "Sol|Do|Re|Mi|Fa|La|Si" : "[A-G]";
+  }
+
+  function parseNote(text, language = "en") {
+    const match = language === "it"
+      ? /^(Sol|Do|Re|Mi|Fa|La|Si)([#b♯♭]?)$/i.exec(text)
+      : /^([A-G])([#b♯♭]?)$/i.exec(text);
+    if (!match) {
+      const examples = language === "it" ? "Do, Re, Mi, Fa, Sol, La, or Si, optionally followed by # or b" : "A–G, optionally followed by # or b";
+      throw new Error(`“${text}” is not a valid note. Use ${examples}.`);
+    }
+    const syllable = match[1];
+    const letter = language === "it" ? ITALIAN_TO_ENGLISH[syllable.toLowerCase()] : syllable.toUpperCase();
     const accidental = match[2];
     const offset = accidental === "#" || accidental === "♯" ? 1 : accidental === "b" || accidental === "♭" ? -1 : 0;
-    return { name: letter + accidental.replace("#", "♯").replace("b", "♭"), pitch: (PITCHES[letter] + offset + 12) % 12, flat: accidental === "b" || accidental === "♭" };
+    const naturalName = language === "it" ? syllable[0].toUpperCase() + syllable.slice(1).toLowerCase() : letter;
+    return { name: naturalName + accidental.replace("#", "♯").replace("b", "♭"), pitch: (PITCHES[letter] + offset + 12) % 12, flat: accidental === "b" || accidental === "♭" };
   }
 
   function intervalsFor(suffix) {
@@ -112,14 +127,14 @@
     return [...new Set(intervals.map((value) => ((value % 12) + 12) % 12))].sort((a, b) => a - b);
   }
 
-  function parseChord(input) {
+  function parseChord(input, language = "en") {
     const source = String(input || "").trim();
     if (!source) throw new Error("Enter a chord symbol to get started.");
 
     // Custom interval syntax deliberately accepts only pitch-class intervals (0–11).
-    const custom = /^([A-Ga-g][#b♯♭]?):\s*\[\s*(\d+(?:\s*,\s*\d+)*)?\s*\]$/.exec(source);
+    const custom = /^([^:]+):\s*\[\s*(\d+(?:\s*,\s*\d+)*)?\s*\]$/.exec(source);
     if (custom) {
-      const root = parseNote(custom[1]);
+      const root = parseNote(custom[1], language);
       const values = custom[2] ? custom[2].split(",").map(Number) : [];
       if (values.some((value) => value < 0 || value > 11)) throw new Error("Custom intervals must be semitones from 0 to 11.");
       return { input: source, root, bass: null, intervals: [...new Set(values)].sort((a, b) => a - b), custom: true };
@@ -127,21 +142,24 @@
 
     let symbol = source;
     let bass = null;
-    const slash = /\/([A-Ga-g][#b♯♭]?)$/.exec(symbol);
+    const slash = new RegExp(`/(${notePattern(language)})([#b♯♭]?)$`, "i").exec(symbol);
     if (slash) {
-      bass = parseNote(slash[1]);
+      bass = parseNote(slash[1] + slash[2], language);
       symbol = symbol.slice(0, slash.index);
     }
 
-    const match = /^([A-Ga-g][#b♯♭]?)(.*)$/.exec(symbol);
-    if (!match) throw new Error("Start with a root note from A to G, such as C, F# or Bb.");
-    const root = parseNote(match[1]);
-    const intervals = intervalsFor(match[2].trim());
+    const match = new RegExp(`^(${notePattern(language)})([#b♯♭]?)(.*)$`, "i").exec(symbol);
+    if (!match) throw new Error(language === "it"
+      ? "Inizia con una nota da Do, Re, Mi, Fa, Sol, La o Si, per esempio Do, Fa# o Sib."
+      : "Start with a root note from A to G, such as C, F# or Bb.");
+    const root = parseNote(match[1] + match[2], language);
+    const intervals = intervalsFor(match[3].trim());
     return { input: source, root, bass, intervals, custom: false };
   }
 
-  function noteName(pitch, preferFlats) {
-    return (preferFlats ? FLATS : SHARPS)[((pitch % 12) + 12) % 12];
+  function noteName(pitch, preferFlats, language = "en") {
+    const names = language === "it" ? (preferFlats ? ITALIAN_FLATS : ITALIAN_SHARPS) : (preferFlats ? FLATS : SHARPS);
+    return names[((pitch % 12) + 12) % 12];
   }
 
   function selectPitchInstances(firstMidi, keyCount, rootPitch, pitches) {
@@ -170,11 +188,13 @@
     return selected;
   }
 
-  function suggestChords(query, limit = 7) {
-    const normalized = String(query || "").trim().replace(/\s+/g, "").toLowerCase();
+  function suggestChords(query, limit = 7, language = "en") {
+    const normalized = String(query || "").trim().replace(/\s+/g, "").replace(/♯/g, "#").replace(/♭/g, "b").toLowerCase();
     if (!normalized) return [];
-    suggestionCatalog ||= SUGGESTION_ROOTS.flatMap((root) => SUGGESTION_SUFFIXES.map((suffix) => `${root}${suffix}`));
-    return suggestionCatalog.filter((symbol) => symbol.toLowerCase().startsWith(normalized)).slice(0, limit);
+    const roots = language === "it" ? ITALIAN_ROOTS : ENGLISH_ROOTS;
+    suggestionCatalog ||= {};
+    suggestionCatalog[language] ||= roots.flatMap((root) => SUGGESTION_SUFFIXES.map((suffix) => `${root}${suffix}`));
+    return suggestionCatalog[language].filter((symbol) => symbol.toLowerCase().startsWith(normalized)).slice(0, limit);
   }
 
   function getChordMidiNotes(chord, firstMidi) {

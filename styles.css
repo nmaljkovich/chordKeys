@@ -28,7 +28,7 @@ a { color: var(--green-dark); }
 .app-shell { width: min(100% - 40px, 900px); margin: 0 auto; padding: 20px 0 28px; }
 .masthead { display: flex; align-items: center; justify-content: space-between; }
 .wordmark { display: inline-flex; align-items: center; gap: 9px; color: var(--ink); font-weight: 750; font-size: 17px; letter-spacing: -.04em; text-decoration: none; }
-.wordmark-mark { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 9px; color: white; background: var(--green); font-family: Georgia, serif; font-size: 16px; font-style: italic; letter-spacing: -.1em; }
+.wordmark-mark { display: inline-flex; align-items: center; justify-content: center; overflow: hidden; width: 28px; height: 28px; border-radius: 9px; color: white; background: var(--green); font-family: Georgia, serif; font-size: 16px; font-style: italic; line-height: 1; letter-spacing: -.1em; white-space: nowrap; }
 .wordmark-mark span { color: var(--gold); }
 .offline-tag { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 12px; font-weight: 600; }
 .offline-dot { width: 7px; height: 7px; border-radius: 50%; background: #67a47b; box-shadow: 0 0 0 3px #e1eee3; }
@@ -41,6 +41,11 @@ h1 span { color: var(--green); font-family: Georgia, "Times New Roman", serif; f
 
 .search-panel { width: min(100%, 620px); margin: 0 auto 24px; padding: 19px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); box-shadow: 0 8px 24px rgb(40 44 35 / 4%); }
 .search-panel label { display: block; margin-bottom: 8px; font-size: 12px; font-weight: 750; }
+.input-tools { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.input-tools label { margin: 0; }
+.language-toggle { display: inline-flex; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 8px; background: #f5f5f0; }
+.language-toggle button { min-height: 27px; padding: 0 9px; border: 0; border-radius: 5px; color: var(--muted); background: transparent; font-size: 10px; font-weight: 700; cursor: pointer; }
+.language-toggle button[aria-pressed="true"] { color: var(--green-dark); background: white; box-shadow: 0 1px 3px rgb(30 40 32 / 12%); }
 .input-row { display: flex; gap: 9px; }
 .input-wrap { position: relative; min-width: 0; flex: 1; }
 .input-row input { width: 100%; min-width: 0; height: 49px; padding: 0 14px; border: 1px solid #d9dcd3; border-radius: 10px; outline: none; color: var(--ink); background: #fff; font-size: 16px; transition: border-color .15s, box-shadow .15s; }
