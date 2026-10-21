@@ -2,6 +2,8 @@
 
 An offline piano chord dictionary. Enter a chord symbol to see its notes highlighted on a responsive virtual piano. The app is plain HTML, CSS, and JavaScript with no build step or third-party dependencies.
 
+![snapshot](./chord_keys_snap.png)
+
 ## Use it
 If you are a musician looking for the download button, just grab [chordKeys.html](chordKeys.html) and you are ready to go.  
 Open it with your desktop or mobile browser, it just works. Doesn't need internet.
