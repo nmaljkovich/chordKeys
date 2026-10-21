@@ -6,7 +6,9 @@ An offline piano chord dictionary. Enter a chord symbol to see its notes highlig
 
 ## Use it
 If you are a musician looking for the download button, just grab [chordKeys.html](chordKeys.html) and you are ready to go.  
-Open it with your desktop or mobile browser, it just works. Doesn't need internet.
+Open it with your desktop or mobile browser, it just works. Doesn't need internet.  
+
+Don't feel like carrying the file around? Just bookmark the [page](https://nmaljkovich.github.io/chordKeys/) (but you'll need internet).
 
 ## Run it
 
